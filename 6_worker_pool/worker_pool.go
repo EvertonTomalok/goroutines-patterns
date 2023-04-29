@@ -4,27 +4,35 @@ import (
 	"fmt"
 
 	"github.com/evertontomalok/go-concurrency/6_worker_pool/workers"
+	"github.com/evertontomalok/go-concurrency/pkg/utils"
 )
 
-const numTasks int = 50
+const numWorkers int = 20
 
 func main() {
-
-	tasks := make(chan string, numTasks)
-	results := make(chan string, numTasks)
-
-	workers.CreateWorkers(tasks, results, 5)
-
 	urls := createUrlsSample()
-	populateTasks(tasks, urls...)
+	var numTasks int = len(urls)
 
-	listenResults(results)
+	tasks := make(chan string)
+	results := make(chan string)
+
+	workers.CreateWorkers(tasks, results, numWorkers)
+
+	go populateTasks(tasks, urls...)
+
+	listenResults(results, numTasks)
 }
 
 func createUrlsSample() []string {
-	urls := make([]string, 0)
-	for i := 0; i < numTasks; i++ {
-		urls = append(urls, fmt.Sprintf("htttp://domain-%d.com.br", i))
+	// simulating crawling urls
+	msg := "Collecting URLS"
+	utils.Spinner(15, msg)
+
+	totalUrls := utils.RandInt(400, 500)
+
+	urls := make([]string, totalUrls)
+	for i := 0; i < totalUrls; i++ {
+		urls[i] = fmt.Sprintf("htttp://domain-%d.com.br", i)
 	}
 
 	return urls
@@ -37,8 +45,8 @@ func populateTasks(tasks chan string, urls ...string) {
 	close(tasks)
 }
 
-func listenResults(results chan string) {
-	for m := 0; m < numTasks; m++ {
+func listenResults(results chan string, totalResults int) {
+	for m := 0; m < totalResults; m++ {
 		fmt.Println(<-results)
 	}
 }
